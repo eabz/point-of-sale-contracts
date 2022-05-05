@@ -5,8 +5,7 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 import "../pos/PointOfSale.sol";
 
 /**
- * @dev Factory contract deploys and stores implementations of Points-of-Sales
- *      each user is only available to deploy a single POS for each address.
+ * @dev Factory contract deploys and stores implementations of Points-of-Sales each user is only available to deploy a single POS for each address.
  *      The factory stores the the required contracts for the POS to work.
  */
 contract Factory is Ownable {
@@ -45,7 +44,7 @@ contract Factory is Ownable {
     // =============================================== Setters ========================================================
 
     /** @dev Constructor.
-     * @param tokensRegistry_ The address of the proxy implementation of the `TokenRegistry` contract.
+     *  @param tokensRegistry_ The address of the proxy implementation of the `TokenRegistry` contract.
      */
     constructor(address tokensRegistry_, address swapHelper_) {
         active = false;
@@ -54,7 +53,7 @@ contract Factory is Ownable {
     }
 
     /** @dev enables or disables the contract to deploy POS contracts.
-     * @param active_ Enable or disable the Factory contract
+     *  @param active_ Enable or disable the Factory contract
      */
     function setActive(bool active_) external onlyOwner {
         active = active_;
@@ -78,7 +77,7 @@ contract Factory is Ownable {
     // =============================================== Getters ========================================================
 
     /** @dev returns the address of the user POS.
-     * @param user_ User to query
+     *  @param user_ User to query
      */
     function getDeployment(address user_) public view returns (address) {
         return deployments[user_];
