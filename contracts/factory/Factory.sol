@@ -3,38 +3,39 @@ pragma solidity 0.8.13;
 
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "../pos/PointOfSale.sol";
+import "../tokens/TokensRegistry.sol";
 
 /**
- * @dev Factory contract deploys and stores implementations of Points-of-Sales each user is only available to deploy a single POS for each address.
- *      The factory stores the the required contracts for the POS to work.
+ * @dev `Factory` deploys and stores implementations of `PointOfSale`.
+ *       Users are only available to deploy a single instance for each address.
  */
 contract Factory is Ownable {
     // =============================================== Storage ========================================================
 
-    /** @dev Returns the address of the user deployment. **/
+    /** @dev Stores each address deployment **/
     mapping(address => address) private deployments;
 
-    /** @dev active boolean enable/disable POS deployments. **/
+    /** @dev Checks if the `Factory` is usable. **/
     bool public active;
 
-    /** @dev tokensRegistry is the contract to whitelist tokens.  **/
-    address public tokensRegistry;
+    /** @dev Whitelisted tokens registry  **/
+    address public registry;
 
-    /** @dev swapHelper is the contract to perform automatic swaps.  **/
-    address public swapHelper;
+    /** @dev Utility contract to perform swaps.  **/
+    address public swap;
 
     // =============================================== Events ========================================================
 
     /** @dev Emitted by the `deploy` function
-     *  @param user The address that deployed the POS.
-     *  @param implementation The address of the POS deployment.
+     *  @param user     The address that deployed the `PointOfSale`.
+     *  @param pos      The address of the `PointOfSale` instance.
      */
-    event Deployed(address indexed user, address indexed implementation);
+    event Deployed(address indexed user, address indexed pos);
 
     // ============================================== Modifiers =======================================================
 
     /**
-     * @dev Modifier that checks if `active` is enabled.
+     * @dev Checks if `active` is enabled.
      */
     modifier onlyActive() {
         require(active, "Factory: not active");
@@ -44,30 +45,29 @@ contract Factory is Ownable {
     // =============================================== Setters ========================================================
 
     /** @dev Constructor.
-     *  @param tokensRegistry_ The address of the proxy implementation of the `TokenRegistry` contract.
+     *  @param _registry    The address of the `TokensRegistry` contract.
+     *  @param _swap        The address of the `SwapHelper` contract.
      */
-    constructor(address tokensRegistry_, address swapHelper_) {
+    constructor(address _registry, address _swap) {
         active = false;
-        tokensRegistry = tokensRegistry_;
-        swapHelper = swapHelper_;
+        registry = _registry;
+        swap = _swap;
     }
 
-    /** @dev enables or disables the contract to deploy POS contracts.
-     *  @param active_ Enable or disable the Factory contract
+    /** @dev Enables or disables the `Factory` contract.
+     *  @param _active  Enable or disable the Factory contract
      */
-    function setActive(bool active_) external onlyOwner {
-        active = active_;
+    function setActive(bool _active) external onlyOwner {
+        active = _active;
     }
 
-    /** @dev deploys a POS contract with the `msg.sender` as the owner.
-     *      It only requires the user to have no previous deployment.
-     */
+    /** @dev Deploys a `PointOfSale` instance with `msg.sender` as the owner. */
     function deploy() external onlyActive returns (PointOfSale) {
         require(
             deployments[msg.sender] == address(0),
             "Factory: user already has a deployment"
         );
-        PointOfSale p = new PointOfSale(tokensRegistry, swapHelper);
+        PointOfSale p = new PointOfSale(registry, swap);
         p.transferOwnership(msg.sender);
         deployments[msg.sender] = address(p);
         emit Deployed(msg.sender, address(p));
@@ -76,10 +76,10 @@ contract Factory is Ownable {
 
     // =============================================== Getters ========================================================
 
-    /** @dev returns the address of the user POS.
-     *  @param user_ User to query
+    /** @dev Returns the address of the user `PointOfSale` instance.
+     *  @param _user Address of the deployer
      */
-    function getDeployment(address user_) public view returns (address) {
-        return deployments[user_];
+    function getDeployment(address _user) public view returns (address) {
+        return deployments[_user];
     }
 }

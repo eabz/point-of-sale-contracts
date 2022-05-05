@@ -5,17 +5,17 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 import "../interfaces/ITokensRegistry.sol";
 
 /**
- * @dev TokenRegistry is the storage whitelisted tokens for the PointOfSale to use as payment.
+ * @dev `TokensRegistry` is the storage whitelisted tokens for the PointOfSale to use as payment.
  *      These tokens must have enough liquidity and paired directly with DAI.
  */
-contract TokensRegistry is Ownable {
+contract TokensRegistry is Ownable, ITokensRegistry {
     // =============================================== Storage ========================================================
 
-    /** @dev Token is an struct to include token information
-     * @params id the contract address of the token.
-     * @params dai_pair the pair address against DAI for the selected DEX.
-     * @params weth_pair the pair address against WETH for the selected DEX.
-     * @params paused boolean to enabled/disable the token on the platform.
+    /** @dev Struct to include token information
+     * @params id           Contract address of the token.
+     * @params dai_pair     Pair address against DAI for the selected DEX.
+     * @params weth_pair    Pair address against WETH for the selected DEX.
+     * @params paused       Boolean to enabled/disable the token on the platform.
      */
     struct Token {
         address id;
@@ -24,10 +24,10 @@ contract TokensRegistry is Ownable {
         bool paused;
     }
 
-    /** @dev tokens array available for usage across the all the POS. */
+    /** @dev Tokens available for usage across the all the `PointOfSale` instances. */
     address[] private _tokens;
 
-    /** @dev tokens available for usage across the all the POS. */
+    /** @dev Tokens available for usage across the all the `PointOfSale` instances. */
     mapping(address => Token) private _supported;
 
     // =============================================== Events =========================================================
@@ -49,12 +49,10 @@ contract TokensRegistry is Ownable {
 
     // =============================================== Setters ========================================================
 
-    /** @dev adds a new token to the registry.
-     *      requires the token to not be supported before addition.
-     * @param token_ The address the token to add to the registry.
-     * @param dai_pair The address the token to add to the registry. If the token doesn't
-     *                 have a DAI (stable coin) pair use 0x0000000000000000000000000000000000000000
-     * @param weth_pair The address the token to add to the registry.
+    /** @dev Adds a new token to the registry. Requires the token to not be supported before addition.
+     * @param token_        The address the token to add to the registry.
+     * @param dai_pair      The address of the token/DAI pair.
+     * @param weth_pair     The address of the token/WETH pair.
      */
     function addToken(
         address token_,
@@ -71,8 +69,7 @@ contract TokensRegistry is Ownable {
         emit TokenAdded(token_);
     }
 
-    /** @dev pauses a previously added token.
-     *      requires the token to be supported.
+    /** @dev Pauses a previously added token. Requires the token to be supported.
      * @param token_ The address the token to pause.
      */
     function pauseToken(address token_) external onlyOwner {
@@ -84,8 +81,7 @@ contract TokensRegistry is Ownable {
         emit TokenPaused(token_);
     }
 
-    /** @dev pauses a previously added token.
-     *      requires the token to be supported and to be paused.
+    /** @dev Resumes a previously paused token. Requires the token to be supported and to be paused.
      * @param token_ The address the token to resume.
      */
     function resumeToken(address token_) external onlyOwner {
@@ -100,26 +96,26 @@ contract TokensRegistry is Ownable {
 
     // =============================================== Getters ========================================================
 
-    /** @dev returns all supported tokens. */
+    /** @dev Returns the addresses of all the supported tokens. */
     function getSupportedTokens() public view returns (address[] memory) {
         return _tokens;
     }
 
-    /** @dev returns true if provided token is supported.
+    /** @dev Returns if a token is supported.
      * @param token_ Address of the token to query.
      */
     function isSupported(address token_) public view returns (bool) {
         return _supported[token_].id != address(0);
     }
 
-    /** @dev returns true if provided token is paused.
+    /** @dev Returns if a token is paused..
      * @param token_ Address of the token to query.
      */
     function isPaused(address token_) public view returns (bool) {
         return _supported[token_].paused;
     }
 
-    /** @dev returns true if provided token is supported and active.
+    /** @dev Returns true if provided token is supported and active.
      * @param token_ Address of the token to query.
      */
     function isActive(address token_) public view returns (bool) {
