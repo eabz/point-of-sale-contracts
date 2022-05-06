@@ -14,6 +14,9 @@ import "../tokens/TokensRegistry.sol";
 contract PointOfSale is Ownable {
     // =============================================== Storage ========================================================
 
+    /** @dev Address for DAI token. */
+    address public DAI;
+
     /** @dev `PaymentType` is a enum to identify which type of payment is being used. */
     enum PaymentType {
         TOKEN_BASED,
@@ -142,7 +145,7 @@ contract PointOfSale is Ownable {
         }
 
         if (p._type == PaymentType.USD_BASED) {
-            return _payUsdBasedPayment(p);
+            return _payUsdBasedPayment(p, _token);
         }
 
         if (p._type == PaymentType.SUBSCRIPTION) {
@@ -176,16 +179,42 @@ contract PointOfSale is Ownable {
 
     // =============================================== Internal ========================================================
 
+    /** @dev Performs the payment for token based payments
+     * @param p Payment information.
+     * @param _token Address of the token used to pay.
+     */
     function _payTokenBasedPayment(Payment memory p, address _token)
         internal
         returns (bool)
     {
-        address pair = registry.getTokenPair(_token);
-        return true;
+        if (_token == DAI) {
+            IERC20(DAI).transferFrom(msg.sender, address(this), p.amount);
+            return true;
+        } else {
+            address pair = registry.getTokenPair(_token);
+            uint256 amount = swap.getTokenAmount(pair, p.amount, 5);
+            IERC20(_token).transferFrom(msg.sender, address(this), amount);
+            return true;
+        }
     }
 
-    function _payUsdBasedPayment(Payment memory p) internal returns (bool) {
-        return true;
+    /** @dev Performs the payment for usd based payments
+     * @param p Payment information.
+     * @param _token Address of the token used to pay.
+     */
+    function _payUsdBasedPayment(Payment memory p, address _token)
+        internal
+        returns (bool)
+    {
+        if (_token == DAI) {
+            IERC20(DAI).transferFrom(msg.sender, address(this), p.amount);
+            return true;
+        } else {
+            address pair = registry.getTokenPair(_token);
+            uint256 tokenAmount = swap.getTokenAmount(pair, p.amount, 5);
+            swap.swap(_token, tokenAmount, p.amount);
+            return true;
+        }
     }
 
     function _initializeSubscription(Payment memory p, uint256 _days)

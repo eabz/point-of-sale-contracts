@@ -66,16 +66,14 @@ contract SwapHelper is Ownable, ISwapHelper {
 
     /** @dev Performs a swap using any token to DAI.
      * @param _token        The converting token address.
-     * @param _pair         The token/DAI to be used for the trade.
+     * @param tokenAmount   The maximum amount of tokens used for the trade
      * @param amount        The minimum expected amount of DAI to receive.
      */
     function swap(
         address _token,
-        address _pair,
+        uint256 tokenAmount,
         uint256 amount
     ) public {
-        uint256 tokenAmount = getTokenAmount(_pair, amount, 5);
-
         IERC20(_token).transferFrom(msg.sender, address(this), tokenAmount);
 
         address[] memory path;
@@ -94,7 +92,7 @@ contract SwapHelper is Ownable, ISwapHelper {
         );
     }
 
-    // =============================================== Internal ========================================================
+    // =============================================== Getters ========================================================
 
     /** @dev Calculates the amount of tokens required to fulfill the `amount`.
      * @param pair      The address of the trade pair.
@@ -105,11 +103,13 @@ contract SwapHelper is Ownable, ISwapHelper {
         address pair,
         uint256 amount,
         uint256 slippage
-    ) internal view returns (uint256) {
+    ) external view returns (uint256) {
         require(pair != address(0), "SwapHelper: pair cannot be empty");
         require(amount > 0, "SwapHelper: amount should be more than 0");
         return _calcTokenAmount(pair, amount, slippage);
     }
+
+    // =============================================== Internal ========================================================
 
     /** @dev Calculates the amount ETH required to fulfill `amount`.
      * @param amount    The amount of DAI that needs to be fulfilled.

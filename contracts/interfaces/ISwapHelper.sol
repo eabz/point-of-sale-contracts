@@ -6,7 +6,13 @@ interface ISwapHelper {
 
     function swap(
         address _token,
-        address _pair,
+        uint256 tokenAmount,
         uint256 amount
     ) external;
+
+    function getTokenAmount(
+        address pair,
+        uint256 amount,
+        uint256 slippage
+    ) external view returns (uint256);
 }
