@@ -1,0 +1,23 @@
+
+name: test
+
+on:
+  push:
+    branches: [ main ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-node@v2
+        with:
+          node-version: 16
+          cache: yarn
+      - name: Build
+        run: yarn build
+      - name: Test
+        env:
+          FORCE_COLOR: 3
+        run: yarn test
