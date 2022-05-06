@@ -13,14 +13,12 @@ contract TokensRegistry is Ownable, ITokensRegistry {
 
     /** @dev Struct to include token information
      * @params id           Contract address of the token.
-     * @params dai_pair     Pair address against DAI for the selected DEX.
-     * @params weth_pair    Pair address against WETH for the selected DEX.
+     * @params pair     Pair address against DAI for the selected DEX.
      * @params paused       Boolean to enabled/disable the token on the platform.
      */
     struct Token {
         address id;
-        address dai_pair;
-        address weth_pair;
+        address pair;
         bool paused;
     }
 
@@ -51,20 +49,16 @@ contract TokensRegistry is Ownable, ITokensRegistry {
 
     /** @dev Adds a new token to the registry. Requires the token to not be supported before addition.
      * @param token_        The address the token to add to the registry.
-     * @param dai_pair      The address of the token/DAI pair.
-     * @param weth_pair     The address of the token/WETH pair.
+     * @param pair      The address of the token/DAI pair.
      */
-    function addToken(
-        address token_,
-        address dai_pair,
-        address weth_pair
-    ) external onlyOwner {
+    function addToken(address token_, address pair) external onlyOwner {
         require(
             !isSupported(token_),
-            "TokenRegistry: the token is already supported"
+            "TokensRegistry: the token is already supported"
         );
+        require(pair != address(0), "TokensRegistry: missing token pair");
         _tokens.push(token_);
-        Token memory t = Token(token_, dai_pair, weth_pair, false);
+        Token memory t = Token(token_, pair, false);
         _supported[token_] = t;
         emit TokenAdded(token_);
     }
@@ -99,6 +93,15 @@ contract TokensRegistry is Ownable, ITokensRegistry {
     /** @dev Returns the addresses of all the supported tokens. */
     function getSupportedTokens() public view returns (address[] memory) {
         return _tokens;
+    }
+
+    /** @dev Returns the token information */
+    function getTokenPair(address _token) public view returns (address) {
+        require(
+            isActive(_token),
+            "TokensRegistry: token doesn't exist or is paused"
+        );
+        return _supported[_token].pair;
     }
 
     /** @dev Returns if a token is supported.
