@@ -1,23 +1,52 @@
-
-name: test
+name: Test
 
 on:
   push:
-    branches: [ main ]
+    branches:
+      - master
 
 jobs:
-  build:
+  test:
     runs-on: ubuntu-latest
-
     steps:
       - uses: actions/checkout@v3
-      - uses: actions/setup-node@v2
+      - uses: actions/setup-node@v3
         with:
-          node-version: 16
-          cache: yarn
-      - name: Build
-        run: yarn build
-      - name: Test
+          node-version: 12.x
+      - uses: actions/cache@v3
+        id: cache
+        with:
+          path: '**/node_modules'
+          key: yarn-v2-${{ hashFiles('**/yarn.lock') }}
+          restore-keys: yarn-v2-
+      - run: yarn ci
+        if: steps.cache.outputs.cache-hit != 'true'
+      - run: yarn run test
         env:
-          FORCE_COLOR: 3
-        run: yarn test
+          FORCE_COLOR: 1
+          ENABLE_GAS_REPORT: true
+      - run: yarn run test:inheritance
+      - name: Print gas report
+        run: cat gas-report.txt
+
+  coverage:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 2
+      - uses: actions/setup-node@v3
+        with:
+          node-version: 12.x
+      - uses: actions/cache@v3
+        id: cache
+        with:
+          path: '**/node_modules'
+          key: yarn-v2-${{ hashFiles('**/yarn.lock') }}
+          restore-keys: yarn-v2-
+      - run: yarn ci
+        if: steps.cache.outputs.cache-hit != 'true'
+      - run: yarn run coverage
+        env:
+          NODE_OPTIONS: --max_old_space_size=4096
+      - uses: codecov/codecov-action@v3
