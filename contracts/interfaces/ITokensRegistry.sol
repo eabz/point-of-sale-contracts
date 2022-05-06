@@ -15,6 +15,4 @@ interface ITokensRegistry {
     function isSupported(address token_) external view returns (bool);
 
     function isPaused(address token_) external view returns (bool);
-
-    function isActive(address token_) external view returns (bool);
 }

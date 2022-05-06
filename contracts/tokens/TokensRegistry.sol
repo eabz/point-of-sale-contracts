@@ -119,11 +119,4 @@ contract TokensRegistry is Ownable, ITokensRegistry {
     function isPaused(address _token) public view returns (bool) {
         return _supported[_token].paused;
     }
-
-    /** @dev Returns true if provided token is supported and active.
-     * @param _token Address of the token to query.
-     */
-    function isActive(address _token) public view returns (bool) {
-        return isSupported(_token) && !isPaused(_token);
-    }
 }
