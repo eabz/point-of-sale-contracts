@@ -42,35 +42,35 @@ describe("SwapHelper", () => {
     this.token1 = await MockToken.deploy(
       "Token1",
       "TKN1",
-      ethers.utils.parseEther("100")
+      ethers.utils.parseEther("1000000")
     );
     await this.token1.deployed();
 
     this.token2 = await MockToken.deploy(
       "Token2",
       "TKN2",
-      ethers.utils.parseEther("100")
+      ethers.utils.parseEther("1000000")
     );
     await this.token2.deployed();
 
     this.dai = await MockToken.deploy(
       "Dai",
       "DAI",
-      ethers.utils.parseEther("500")
+      ethers.utils.parseEther("1000000")
     );
     await this.dai.deployed();
 
     await this.token1.approve(
       this.router.address,
-      ethers.utils.parseEther("100000")
+      ethers.utils.parseEther("10000000000000000000000")
     );
     await this.token2.approve(
       this.router.address,
-      ethers.utils.parseEther("100000")
+      ethers.utils.parseEther("10000000000000000000000")
     );
     await this.dai.approve(
       this.router.address,
-      ethers.utils.parseEther("100000")
+      ethers.utils.parseEther("10000000000000000000000")
     );
 
     const timestamp = Math.floor(Date.now() / 1000) + 300;
@@ -78,10 +78,10 @@ describe("SwapHelper", () => {
     await this.router.addLiquidity(
       this.token1.address,
       this.dai.address,
-      ethers.utils.parseEther("10"),
-      ethers.utils.parseEther("10"),
-      ethers.utils.parseEther("10"),
-      ethers.utils.parseEther("10"),
+      ethers.utils.parseEther("100000"),
+      ethers.utils.parseEther("100000"),
+      ethers.utils.parseEther("100000"),
+      ethers.utils.parseEther("100000"),
       this.developer.address,
       timestamp
     );
@@ -89,22 +89,22 @@ describe("SwapHelper", () => {
     await this.router.addLiquidity(
       this.token2.address,
       this.dai.address,
-      ethers.utils.parseEther("20"),
-      ethers.utils.parseEther("10"),
-      ethers.utils.parseEther("20"),
-      ethers.utils.parseEther("10"),
+      ethers.utils.parseEther("500000"),
+      ethers.utils.parseEther("100000"),
+      ethers.utils.parseEther("500000"),
+      ethers.utils.parseEther("100000"),
       this.developer.address,
       timestamp
     );
 
     await this.router.addLiquidityETH(
       this.dai.address,
-      ethers.utils.parseEther("20"),
-      ethers.utils.parseEther("20"),
-      ethers.utils.parseEther("1"),
+      ethers.utils.parseEther("200000"),
+      ethers.utils.parseEther("200000"),
+      ethers.utils.parseEther("100"),
       this.developer.address,
       timestamp,
-      { value: ethers.utils.parseEther("1") }
+      { value: ethers.utils.parseEther("100") }
     );
 
     this.helper = await SwapHelper.deploy(
@@ -118,154 +118,109 @@ describe("SwapHelper", () => {
 
   it("should make sure everything is deployed correctly", async () => {
     await expect(await this.token1.balanceOf(this.developer.address)).to.eq(
-      ethers.utils.parseEther("90")
+      ethers.utils.parseEther("900000")
     );
 
     await expect(await this.token2.balanceOf(this.developer.address)).to.eq(
-      ethers.utils.parseEther("80")
+      ethers.utils.parseEther("500000")
     );
 
     await expect(await this.dai.balanceOf(this.developer.address)).to.eq(
-      ethers.utils.parseEther("460")
+      ethers.utils.parseEther("600000")
     );
   });
 
   it("should return token 1 amount for DAI equally", async () => {
-    let expected = 1;
+    await expect(
+      this.helper.getTokenAmount(
+        this.token1.address,
+        ethers.utils.parseEther("5000")
+      )
+    ).to.revertedWith("SwapHelper: slippage above 2%");
 
-    let slippage = 0;
-    expect(
-      await this.helper.getTokenAmount(this.token1.address, 1, slippage)
-    ).to.eq(ethers.utils.parseEther(expected.toFixed(0)));
+    await expect(
+      await this.helper.getTokenAmount(
+        this.token1.address,
+        ethers.utils.parseEther("1500")
+      )
+    ).to.eq(ethers.utils.parseEther("1522.5"));
 
-    slippage = 2;
-    let slippageExpected = (1 + slippage / 100) * expected;
-    expect(
-      await this.helper.getTokenAmount(this.token1.address, 1, slippage)
-    ).to.eq(ethers.utils.parseEther(slippageExpected.toString()));
+    await expect(
+      await this.helper.getTokenAmount(
+        this.token1.address,
+        ethers.utils.parseEther("150")
+      )
+    ).to.eq(ethers.utils.parseEther("150.15"));
 
-    slippage = 5;
-    slippageExpected = (1 + slippage / 100) * expected;
-    expect(
-      await this.helper.getTokenAmount(this.token1.address, 1, slippage)
-    ).to.eq(ethers.utils.parseEther(slippageExpected.toString()));
+    await expect(
+      await this.helper.getTokenAmount(
+        this.token1.address,
+        ethers.utils.parseEther("15")
+      )
+    ).to.eq(ethers.utils.parseEther("15.075"));
 
-    slippage = 9;
-    slippageExpected = (1 + slippage / 100) * expected;
-    expect(
-      await this.helper.getTokenAmount(this.token1.address, 1, slippage)
-    ).to.eq(ethers.utils.parseEther(slippageExpected.toString()));
+    await expect(
+      await this.helper.getTokenAmount(
+        this.token1.address,
+        ethers.utils.parseEther("1.5")
+      )
+    ).to.eq(ethers.utils.parseEther("1.5075"));
 
-    slippage = 19;
-    slippageExpected = (1 + slippage / 100) * expected;
-    expect(
-      await this.helper.getTokenAmount(this.token1.address, 1, slippage)
-    ).to.eq(ethers.utils.parseEther(slippageExpected.toString()));
-
-    slippage = 33;
-    slippageExpected = (1 + slippage / 100) * expected;
-    expect(
-      await this.helper.getTokenAmount(this.token1.address, 1, slippage)
-    ).to.eq(ethers.utils.parseEther(slippageExpected.toString()));
-
-    slippage = 50;
-    slippageExpected = (1 + slippage / 100) * expected;
-    expect(
-      await this.helper.getTokenAmount(this.token1.address, 1, slippage)
-    ).to.eq(ethers.utils.parseEther(slippageExpected.toString()));
+    await expect(
+      await this.helper.getTokenAmount(
+        this.token1.address,
+        ethers.utils.parseEther("0.15")
+      )
+    ).to.eq(ethers.utils.parseEther("0.15075"));
   });
 
   it("should return token 2 amount for DAI to half", async () => {
-    let expected = 2;
+    await expect(
+      this.helper.getTokenAmount(
+        this.token2.address,
+        ethers.utils.parseEther("5000")
+      )
+    ).to.revertedWith("SwapHelper: slippage above 2%");
 
-    let slippage = 0;
-    expect(
-      await this.helper.getTokenAmount(this.token2.address, 1, slippage)
-    ).to.eq(ethers.utils.parseEther(expected.toFixed(0)));
+    await expect(
+      await this.helper.getTokenAmount(
+        this.token2.address,
+        ethers.utils.parseEther("1500")
+      )
+    ).to.eq(ethers.utils.parseEther("7612.5"));
 
-    slippage = 2;
-    let slippageExpected = (1 + slippage / 100) * expected;
-    expect(
-      await this.helper.getTokenAmount(this.token2.address, 1, slippage)
-    ).to.eq(ethers.utils.parseEther(slippageExpected.toString()));
+    await expect(
+      await this.helper.getTokenAmount(
+        this.token2.address,
+        ethers.utils.parseEther("150")
+      )
+    ).to.eq(ethers.utils.parseEther("750.75"));
 
-    slippage = 5;
-    slippageExpected = (1 + slippage / 100) * expected;
-    expect(
-      await this.helper.getTokenAmount(this.token2.address, 1, slippage)
-    ).to.eq(ethers.utils.parseEther(slippageExpected.toString()));
+    await expect(
+      await this.helper.getTokenAmount(
+        this.token2.address,
+        ethers.utils.parseEther("15")
+      )
+    ).to.eq(ethers.utils.parseEther("75.375"));
 
-    slippage = 9;
-    slippageExpected = (1 + slippage / 100) * expected;
-    expect(
-      await this.helper.getTokenAmount(this.token2.address, 1, slippage)
-    ).to.eq(ethers.utils.parseEther(slippageExpected.toString()));
+    await expect(
+      await this.helper.getTokenAmount(
+        this.token2.address,
+        ethers.utils.parseEther("1.5")
+      )
+    ).to.eq(ethers.utils.parseEther("7.5375"));
 
-    slippage = 19;
-    slippageExpected = (1 + slippage / 100) * expected;
-    expect(
-      await this.helper.getTokenAmount(this.token2.address, 1, slippage)
-    ).to.eq(ethers.utils.parseEther(slippageExpected.toString()));
-
-    slippage = 33;
-    slippageExpected = (1 + slippage / 100) * expected;
-    expect(
-      await this.helper.getTokenAmount(this.token2.address, 1, slippage)
-    ).to.eq(ethers.utils.parseEther(slippageExpected.toString()));
-
-    slippage = 50;
-    slippageExpected = (1 + slippage / 100) * expected;
-    expect(
-      await this.helper.getTokenAmount(this.token2.address, 1, slippage)
-    ).to.eq(ethers.utils.parseEther(slippageExpected.toString()));
+    await expect(
+      await this.helper.getTokenAmount(
+        this.token2.address,
+        ethers.utils.parseEther("0.15")
+      )
+    ).to.eq(ethers.utils.parseEther("0.75375"));
   });
 
-  it("should return ETH amount for DAI to 1 / 20", async () => {
-    let expected = 1;
+  it("should return ETH amount for DAI to 1 / 20", async () => {});
 
-    let slippage = 0;
-    expect(await this.helper.getETHAmount(20, slippage)).to.eq(
-      ethers.utils.parseEther(expected.toFixed(0))
-    );
-
-    slippage = 2;
-    let slippageExpected = (1 + slippage / 100) * expected;
-    expect(await this.helper.getETHAmount(20, slippage)).to.eq(
-      ethers.utils.parseEther(slippageExpected.toString())
-    );
-
-    slippage = 5;
-    slippageExpected = (1 + slippage / 100) * expected;
-    expect(await this.helper.getETHAmount(20, slippage)).to.eq(
-      ethers.utils.parseEther(slippageExpected.toString())
-    );
-
-    slippage = 9;
-    slippageExpected = (1 + slippage / 100) * expected;
-    expect(await this.helper.getETHAmount(20, slippage)).to.eq(
-      ethers.utils.parseEther(slippageExpected.toString())
-    );
-
-    slippage = 19;
-    slippageExpected = (1 + slippage / 100) * expected;
-    expect(await this.helper.getETHAmount(20, slippage)).to.eq(
-      ethers.utils.parseEther(slippageExpected.toString())
-    );
-
-    slippage = 33;
-    slippageExpected = (1 + slippage / 100) * expected;
-    expect(await this.helper.getETHAmount(20, slippage)).to.eq(
-      ethers.utils.parseEther(slippageExpected.toString())
-    );
-
-    slippage = 50;
-    slippageExpected = (1 + slippage / 100) * expected;
-    expect(await this.helper.getETHAmount(20, slippage)).to.eq(
-      ethers.utils.parseEther(slippageExpected.toString())
-    );
-  });
-
-  it("perform a trade with token 1", async () => {});
+  it("should swap token 1 for around 1 DAI", async () => {});
 
   it("perform a trade with token 2", async () => {});
 

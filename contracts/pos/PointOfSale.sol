@@ -199,7 +199,7 @@ contract PointOfSale is Ownable {
                 !registry.isPaused(_token),
                 "PointOfSale: Token is currently paused"
             );
-            uint256 amount = swap.getTokenAmount(_token, p.amount, 5);
+            uint256 amount = swap.getTokenAmount(_token, p.amount);
             IERC20(_token).transferFrom(msg.sender, address(this), amount);
             return true;
         }
@@ -217,8 +217,7 @@ contract PointOfSale is Ownable {
             IERC20(DAI).transferFrom(msg.sender, address(this), p.amount);
             return true;
         } else {
-            uint256 tokenAmount = swap.getTokenAmount(_token, p.amount, 5);
-            swap.swap(_token, tokenAmount, p.amount);
+            swap.swap(_token, p.amount);
             return true;
         }
     }

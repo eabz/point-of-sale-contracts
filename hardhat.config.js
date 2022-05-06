@@ -18,7 +18,7 @@ const argv = require("yargs/yargs")()
       alias: "compileVersion",
       type: "string",
       default: "0.8.9",
-    }
+    },
   }).argv;
 
 if (argv.enableGasReport) {
@@ -32,11 +32,7 @@ require("dotenv").config();
 module.exports = {
   defaultNetwork: "hardhat",
   networks: {
-    hardhat: {
-      forking: {
-        url: "https://rpc-mumbai.maticvigil.com",
-      },
-    },
+    hardhat: {},
   },
   solidity: {
     compilers: [

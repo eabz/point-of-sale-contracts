@@ -48,15 +48,16 @@ contract SwapHelper is Ownable, ISwapHelper {
     }
 
     /** @dev Performs a swap using ETH to DAI.
-     * @param amount The minimum expected amount of DAI to receive.
+     * @param expected The minimum expected amount of DAI to receive.
      */
-    function swapETH(uint256 eth, uint256 amount) public payable {
+    function swapETH(uint256 expected) public payable {
+        uint256 eth = _ethAmount(expected);
         address[] memory path = new address[](2);
         path[0] = WETH;
         path[1] = DAI;
 
         IUniswapV2Router02(router).swapExactETHForTokens{value: eth}(
-            amount,
+            expected,
             path,
             msg.sender,
             block.timestamp + 200
@@ -65,88 +66,118 @@ contract SwapHelper is Ownable, ISwapHelper {
 
     /** @dev Performs a swap using any token to DAI.
      * @param _token        The converting token address.
-     * @param tokenAmount   The maximum amount of tokens used for the trade
-     * @param amount        The minimum expected amount of DAI to receive.
+     * @param expected        The minimum expected amount of DAI to receive.
      */
-    function swap(
-        address _token,
-        uint256 tokenAmount,
-        uint256 amount
-    ) public {
+    function swap(address _token, uint256 expected) public {
+        uint256 tokenAmount = _tokenAmount(_token, expected);
         IERC20(_token).transferFrom(msg.sender, address(this), tokenAmount);
 
-        address[] memory path;
+        address[] memory path = new address[](2);
+        path[0] = _token;
+        path[1] = DAI;
 
         uint256 allowance = IERC20(_token).allowance(address(this), router);
         if (allowance < tokenAmount) {
             IERC20(_token).approve(router, tokenAmount);
         }
 
-        IUniswapV2Router02(router).swapExactTokensForTokens(
+        IUniswapV2Router02(router).swapTokensForExactTokens(
+            expected,
             tokenAmount,
-            amount,
             path,
             msg.sender,
-            block.timestamp + 200
+            block.timestamp + 500
         );
     }
 
-    // =============================================== Getters ========================================================
+    // =============================================== Getters =========================================================
 
-    /** @dev Calculates the amount of tokens required to fulfill the `amount`.
+    /** @dev Public view for the internal `_tokenAmount` function.
      * @param token      The address of the trade pair.
-     * @param amount    The amount of DAI that needs to be fulfilled.
-     * @param slippage  Percentage of variation of token price.
+     * @param expected   The amount of DAI that needs to be fulfilled.
      */
-    function getTokenAmount(
-        address token,
-        uint256 amount,
-        uint256 slippage
-    ) external view returns (uint256) {
-        require(token != address(0), "SwapHelper: token cannot be empty");
-        require(amount > 0, "SwapHelper: amount should be more than 0");
-        address pair = IUniswapV2Factory(factory).getPair(token, DAI);
-        require(pair != address(0), "SwapHelper: pair cannot be empty");
-        return _calcTokenAmount(pair, amount, slippage);
-    }
-
-    /** @dev Calculates the amount ETH required to fulfill `amount`.
-     * @param amount    The amount of DAI that needs to be fulfilled.
-     * @param slippage  Percentage of variation of token price.
-     */
-    function getETHAmount(uint256 amount, uint256 slippage)
+    function getTokenAmount(address token, uint256 expected)
         external
         view
         returns (uint256)
     {
-        require(amount > 0, "SwapHelper: amount should be more than 0");
-        uint256 amountETH = (amount / _daiToWETH()) * 1 ether;
-        uint256 slippage = ((amountETH / 100) * slippage);
-        return amountETH + slippage;
+        return _tokenAmount(token, expected);
+    }
+
+    /** @dev Public view for the internal `_ethAmount` function.
+     * @param expected    The amount of DAI that needs to be fulfilled.
+     */
+    function getETHAmount(uint256 expected) external view returns (uint256) {
+        return _ethAmount(expected);
     }
 
     // =============================================== Internal ========================================================
 
-    /** @dev Calculates the amount of tokens required to fulfill the `daiAmount`.
-     * @param pair The address of the trade pair (it assumes it is token/DAI pair)
-     * @param expected The amount of DAI that needs to be fulfilled.
-     * @param slippage percentage of variation of token price.
+    /** @dev Calculates the amount of tokens required to fulfill the `amount`.
+     * @param _token     The address of the trade pair.
+     * @param expected   The amount of DAI that needs to be fulfilled.
      */
-    function _calcTokenAmount(
-        address pair,
-        uint256 expected,
-        uint256 slippage
-    ) internal view returns (uint256) {
-        (uint112 token, uint112 dai, ) = IUniswapV2Pair(pair).getReserves();
-        uint256 amount = (expected * (dai / token)) * 1 ether;
-        uint256 slippage = ((amount / 100) * slippage);
-        return amount + slippage;
+    function _tokenAmount(address _token, uint256 expected)
+        internal
+        view
+        returns (uint256)
+    {
+        require(_token != address(0), "SwapHelper: token cannot be empty");
+
+        require(expected > 0, "SwapHelper: amount should be more than 0");
+
+        address pair = IUniswapV2Factory(factory).getPair(_token, DAI);
+
+        require(pair != address(0), "SwapHelper: pair cannot be empty");
+
+        (address token0, ) = sortTokens(_token, DAI);
+
+        (uint112 reserve0, uint112 reserve1, ) = IUniswapV2Pair(pair)
+            .getReserves();
+
+        (uint256 token, uint256 dai) = _token == token0
+            ? (reserve0, reserve1)
+            : (reserve1, reserve0);
+
+        uint256 amount = dai > token
+            ? (expected * (dai / token))
+            : (expected * (token / dai));
+
+        uint256 slippage = (expected * 1000) / dai;
+
+        require(slippage < 20, "SwapHelper: slippage above 2%");
+
+        if (slippage == 0) {
+            slippage = 5;
+        }
+
+        return amount + ((amount / 1000) * slippage);
     }
 
-    /** @dev Returns the amount of DAI required to buy 1 ETH. */
-    function _daiToWETH() internal view returns (uint256) {
+    /** @dev Calculates the amount ETH required to fulfill `amount`.
+     * @param expected  The amount of DAI that needs to be fulfilled.
+     */
+    function _ethAmount(uint256 expected) internal view returns (uint256) {
+        require(expected > 0, "SwapHelper: expected should be more than 0");
         address pair = IUniswapV2Factory(factory).getPair(WETH, DAI);
         (uint112 dai, uint112 eth, ) = IUniswapV2Pair(pair).getReserves();
-        return (dai / eth);
+        uint256 daiForETH = (dai / eth);
+        uint256 amountETH = (expected / daiForETH);
+        uint256 slippage = (expected * 100) / dai;
+        require(slippage < 2, "SwapHelper: slippage above 2%");
+        return amountETH + ((amountETH / 100) * slippage);
+    }
+
+    /** @dev Utility function from UniswapV2Library to sort tokens. */
+    function sortTokens(address tokenA, address tokenB)
+        internal
+        pure
+        returns (address token0, address token1)
+    {
+        require(tokenA != tokenB, "UniswapV2Library: IDENTICAL_ADDRESSES");
+        (token0, token1) = tokenA < tokenB
+            ? (tokenA, tokenB)
+            : (tokenB, tokenA);
+        require(token0 != address(0), "UniswapV2Library: ZERO_ADDRESS");
     }
 }

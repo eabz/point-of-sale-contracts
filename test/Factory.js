@@ -92,7 +92,7 @@ describe("Factory", () => {
 
   it("should return the deployment address", async () => {
     expect(await this.factory.getDeployment(this.developer.address)).to.eq(
-      "0x3D8a0D51BB92dA867B7c85D6FBcc14BD97D182B4"
+      "0x3B02fF1e626Ed7a8fd6eC5299e2C54e1421B626B"
     );
   });
 });
