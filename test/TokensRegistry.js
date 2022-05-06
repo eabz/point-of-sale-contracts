@@ -3,7 +3,6 @@ const { ethers } = require("hardhat");
 
 const DAI = "0x6B175474E89094C44Da98b954EedeAC495271d0F";
 const WETH = "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2";
-const DAI_WETH = "0x60594a405d53811d3BC4766596EFD80fd545A270";
 
 describe("TokensRegistry", () => {
   before(async () => {
@@ -14,27 +13,18 @@ describe("TokensRegistry", () => {
 
   it("should revert add token with an empty address", async () => {
     await expect(
-      this.registry.addToken(
-        "0x0000000000000000000000000000000000000000",
-        DAI_WETH
-      )
+      this.registry.addToken("0x0000000000000000000000000000000000000000")
     ).to.revertedWith("TokensRegistry: missing token");
   });
 
-  it("should revert add token with an empty pair", async () => {
-    await expect(
-      this.registry.addToken(DAI, "0x0000000000000000000000000000000000000000")
-    ).to.revertedWith("TokensRegistry: missing token pair");
-  });
-
   it("should add a token", async () => {
-    await expect(this.registry.addToken(DAI, DAI_WETH))
+    await expect(this.registry.addToken(DAI))
       .to.emit(this.registry, "TokenAdded")
       .withArgs(DAI);
   });
 
   it("should revert to add an already added token", async () => {
-    await expect(this.registry.addToken(DAI, DAI_WETH)).to.revertedWith(
+    await expect(this.registry.addToken(DAI)).to.revertedWith(
       "TokensRegistry: the token is already supported"
     );
   });
@@ -89,29 +79,11 @@ describe("TokensRegistry", () => {
     await expect(await this.registry.isPaused(DAI)).to.eq(false);
   });
 
-  it("should return the token pair", async () => {
-    await expect(await this.registry.getTokenPair(DAI)).to.eq(DAI_WETH);
-  });
-
-  it("should revert trying to fetch the token pair of a non supported token", async () => {
-    await expect(this.registry.getTokenPair(WETH)).to.revertedWith(
-      "TokenRegistry: the token is not supported"
-    );
-  });
-
-  it("should revert trying to get the pair of a paused token", async () => {
-    await this.registry.pauseToken(DAI);
-    await expect(this.registry.getTokenPair(DAI)).to.revertedWith(
-      "TokenRegistry: the token is paused"
-    );
-    await this.registry.resumeToken(DAI);
-  });
-
   it("should return all supported tokens", async () => {
     await expect(await this.registry.getSupportedTokens()).to.have.members([
       DAI,
     ]);
-    await this.registry.addToken(WETH, DAI_WETH);
+    await this.registry.addToken(WETH);
     await expect(await this.registry.getSupportedTokens()).to.have.members([
       DAI,
       WETH,

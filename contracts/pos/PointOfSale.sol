@@ -191,8 +191,15 @@ contract PointOfSale is Ownable {
             IERC20(DAI).transferFrom(msg.sender, address(this), p.amount);
             return true;
         } else {
-            address pair = registry.getTokenPair(_token);
-            uint256 amount = swap.getTokenAmount(pair, p.amount, 5);
+            require(
+                registry.isSupported(_token),
+                "PointOfSale: Token not supported"
+            );
+            require(
+                !registry.isPaused(_token),
+                "PointOfSale: Token is currently paused"
+            );
+            uint256 amount = swap.getTokenAmount(_token, p.amount, 5);
             IERC20(_token).transferFrom(msg.sender, address(this), amount);
             return true;
         }
@@ -210,8 +217,7 @@ contract PointOfSale is Ownable {
             IERC20(DAI).transferFrom(msg.sender, address(this), p.amount);
             return true;
         } else {
-            address pair = registry.getTokenPair(_token);
-            uint256 tokenAmount = swap.getTokenAmount(pair, p.amount, 5);
+            uint256 tokenAmount = swap.getTokenAmount(_token, p.amount, 5);
             swap.swap(_token, tokenAmount, p.amount);
             return true;
         }

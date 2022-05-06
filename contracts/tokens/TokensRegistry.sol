@@ -12,13 +12,11 @@ contract TokensRegistry is Ownable, ITokensRegistry {
     // =============================================== Storage ========================================================
 
     /** @dev Struct to include token information
-     * @params id           Contract address of the token.
-     * @params pair     Pair address against DAI for the selected DEX.
-     * @params paused       Boolean to enabled/disable the token on the platform.
+     * @params token    Address of the token.
+     * @params paused   Boolean to enabled/disable the token on the platform.
      */
     struct Token {
-        address id;
-        address pair;
+        address token;
         bool paused;
     }
 
@@ -48,18 +46,16 @@ contract TokensRegistry is Ownable, ITokensRegistry {
     // =============================================== Setters ========================================================
 
     /** @dev Adds a new token to the registry. Requires the token to not be supported before addition.
-     * @param _token        The address the token to add to the registry.
-     * @param pair      The address of the token/DAI pair.
+     * @param _token The address the token to add to the registry.
      */
-    function addToken(address _token, address pair) external onlyOwner {
+    function addToken(address _token) external onlyOwner {
         require(
             !isSupported(_token),
             "TokensRegistry: the token is already supported"
         );
         require(_token != address(0), "TokensRegistry: missing token");
-        require(pair != address(0), "TokensRegistry: missing token pair");
         _tokens.push(_token);
-        Token memory t = Token(_token, pair, false);
+        Token memory t = Token(_token, false);
         _supported[_token] = t;
         emit TokenAdded(_token);
     }
@@ -96,21 +92,11 @@ contract TokensRegistry is Ownable, ITokensRegistry {
         return _tokens;
     }
 
-    /** @dev Returns the token information */
-    function getTokenPair(address _token) public view returns (address) {
-        require(
-            isSupported(_token),
-            "TokenRegistry: the token is not supported"
-        );
-        require(!isPaused(_token), "TokenRegistry: the token is paused");
-        return _supported[_token].pair;
-    }
-
     /** @dev Returns if a token is supported.
      * @param _token Address of the token to query.
      */
     function isSupported(address _token) public view returns (bool) {
-        return _supported[_token].id != address(0);
+        return _supported[_token].token != address(0);
     }
 
     /** @dev Returns if a token is paused..

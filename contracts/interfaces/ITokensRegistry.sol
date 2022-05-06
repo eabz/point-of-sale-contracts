@@ -2,17 +2,15 @@
 pragma solidity 0.8.9;
 
 interface ITokensRegistry {
-    function addToken(address token_, address pair) external;
+    function addToken(address _token) external;
 
-    function pauseToken(address token_) external;
+    function pauseToken(address _token) external;
 
-    function resumeToken(address token_) external;
+    function resumeToken(address _token) external;
 
     function getSupportedTokens() external view returns (address[] memory);
 
-    function getTokenPair(address _id) external view returns (address);
+    function isSupported(address _token) external view returns (bool);
 
-    function isSupported(address token_) external view returns (bool);
-
-    function isPaused(address token_) external view returns (bool);
+    function isPaused(address _token) external view returns (bool);
 }
