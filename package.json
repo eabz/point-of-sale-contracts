@@ -2,22 +2,24 @@
   "name": "point-of-sale-contracts",
   "version": "1.0.0",
   "description": "Contracts to deploy self-custody and self-managed Point-of-Sales for any EVM",
+  "bugs": {
+    "url": "https://https://github.com/eabz/point-of-sale-contracts/issues"
+  },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/eabz/point-of-sale-contracts.git"
   },
-  "author": "Enrique Berrueta",
   "license": "MIT",
-  "bugs": {
-    "url": "https://https://github.com/eabz/point-of-sale-contracts/issues"
-  },
+  "author": "Enrique Berrueta",
   "scripts": {
-    "flat": "./scripts/flat.sh",
     "compile": "hardhat compile",
-    "format": "prettier --write 'contracts/**/*.sol'",
+    "coverage": "env COVERAGE=true hardhat coverage",
+    "format": "prettier --write 'contracts/**/*.sol' && yarn run sort",
+    "gas-report": "env ENABLE_GAS_REPORT=true yarn run test",
+    "sort": "npx sort-package-json",
     "test": "hardhat test"
   },
-  "dependencies": {
+  "devDependencies": {
     "@nomiclabs/hardhat-ethers": "2.0.5",
     "@nomiclabs/hardhat-waffle": "2.0.3",
     "@openzeppelin/contracts": "4.6.0",
@@ -27,11 +29,10 @@
     "dotenv": "16.0.0",
     "ethereum-waffle": "3.4.4",
     "ethers": "5.6.5",
-    "typescript": "4.6.4"
-  },
-  "devDependencies": {
     "hardhat": "2.9.3",
     "prettier": "2.6.2",
-    "prettier-plugin-solidity": "1.0.0-beta.19"
+    "prettier-plugin-solidity": "1.0.0-beta.19",
+    "solidity-coverage": "0.7.21",
+    "typescript": "4.6.4"
   }
 }
