@@ -1,8 +1,34 @@
+const argv = require('yargs/yargs')()
+    .env('')
+    .options({
+        ci: {
+            type: 'boolean',
+            default: false,
+        },
+        coverage: {
+            type: 'boolean',
+            default: false,
+        },
+        gas: {
+            alias: 'enableGasReport',
+            type: 'boolean',
+            default: false,
+        },
+        compiler: {
+            alias: 'compileVersion',
+            type: 'string',
+            default: '0.8.9',
+        }
+    })
+    .argv;
+
+if (argv.enableGasReport) {
+    require('hardhat-gas-reporter');
+}
+
 require("@nomiclabs/hardhat-waffle");
 
 require('dotenv').config()
-
-let private_key = process.env.PRIVATE_KEY;
 
 module.exports = {
     defaultNetwork: "hardhat",
@@ -15,7 +41,7 @@ module.exports = {
     },
     solidity: {
         compilers: [{
-            version: "0.8.13",
+            version: argv.compiler,
             settings: {
                 optimizer: {
                     enabled: true,
@@ -24,7 +50,13 @@ module.exports = {
             }
         }]
     },
-    mocha: {
-        timeout: 2000000
-    }
+    gasReporter: {
+        currency: 'USD',
+        outputFile: argv.ci ? 'gas-report.txt' : undefined,
+    },
 };
+
+if (argv.coverage) {
+    require('solidity-coverage');
+    module.exports.networks.hardhat.initialBaseFeePerGas = 0;
+}
