@@ -18,6 +18,7 @@ jobs:
           path: '**/node_modules'
           key: yarn-v2-${{ hashFiles('**/yarn.lock') }}
           restore-keys: yarn-v2-
+      - run: yarn install
       - run: yarn ci
         if: steps.cache.outputs.cache-hit != 'true'
       - run: yarn run test
@@ -42,6 +43,7 @@ jobs:
           path: '**/node_modules'
           key: yarn-v2-${{ hashFiles('**/yarn.lock') }}
           restore-keys: yarn-v2-
+      - run: yarn install      
       - run: yarn ci
         if: steps.cache.outputs.cache-hit != 'true'
       - run: yarn run coverage
