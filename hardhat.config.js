@@ -18,7 +18,7 @@ const argv = require("yargs/yargs")()
       alias: "compileVersion",
       type: "string",
       default: "0.8.9",
-    },
+    }
   }).argv;
 
 if (argv.enableGasReport) {
@@ -60,5 +60,4 @@ module.exports = {
 if (argv.coverage) {
   require("solidity-coverage");
   module.exports.networks.hardhat.initialBaseFeePerGas = 0;
-  module.exports.skipFiles;
 }
