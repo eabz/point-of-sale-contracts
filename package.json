@@ -14,7 +14,8 @@
   "scripts": {
     "flat": "./scripts/flat.sh",
     "compile": "hardhat compile",
-    "format": "prettier --write 'contracts/**/*.sol'"
+    "format": "prettier --write 'contracts/**/*.sol'",
+    "test": "hardhat test"
   },
   "dependencies": {
     "@nomiclabs/hardhat-ethers": "2.0.5",
