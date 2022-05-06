@@ -146,7 +146,7 @@ contract SwapHelper is Ownable, ISwapHelper {
     /** @dev Returns the amount of DAI required to buy 1 ETH. */
     function _daiToWETH() internal view returns (uint256) {
         address pair = IUniswapV2Factory(factory).getPair(WETH, DAI);
-        (uint112 eth, uint112 dai, ) = IUniswapV2Pair(pair).getReserves();
+        (uint112 dai, uint112 eth, ) = IUniswapV2Pair(pair).getReserves();
         return (dai / eth);
     }
 }

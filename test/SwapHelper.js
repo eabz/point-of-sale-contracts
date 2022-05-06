@@ -6,7 +6,7 @@ const WETH9 = require("@uniswap/v2-periphery/build/WETH9.json");
 
 describe("SwapHelper", () => {
   before(async () => {
-    await hre.network.provider.send("hardhat_reset")
+    await hre.network.provider.send("hardhat_reset");
 
     const [owner] = await ethers.getSigners();
 
