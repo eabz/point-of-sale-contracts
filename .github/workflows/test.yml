@@ -2,8 +2,7 @@ name: Test
 
 on:
   push:
-    branches:
-      - master
+    branches: ['main']
 
 jobs:
   test:
@@ -25,7 +24,6 @@ jobs:
         env:
           FORCE_COLOR: 1
           ENABLE_GAS_REPORT: true
-      - run: yarn run test:inheritance
       - name: Print gas report
         run: cat gas-report.txt
 
