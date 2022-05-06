@@ -48,44 +48,45 @@ contract TokensRegistry is Ownable, ITokensRegistry {
     // =============================================== Setters ========================================================
 
     /** @dev Adds a new token to the registry. Requires the token to not be supported before addition.
-     * @param token_        The address the token to add to the registry.
+     * @param _token        The address the token to add to the registry.
      * @param pair      The address of the token/DAI pair.
      */
-    function addToken(address token_, address pair) external onlyOwner {
+    function addToken(address _token, address pair) external onlyOwner {
         require(
-            !isSupported(token_),
+            !isSupported(_token),
             "TokensRegistry: the token is already supported"
         );
+        require(_token != address(0), "TokensRegistry: missing token");
         require(pair != address(0), "TokensRegistry: missing token pair");
-        _tokens.push(token_);
-        Token memory t = Token(token_, pair, false);
-        _supported[token_] = t;
-        emit TokenAdded(token_);
+        _tokens.push(_token);
+        Token memory t = Token(_token, pair, false);
+        _supported[_token] = t;
+        emit TokenAdded(_token);
     }
 
     /** @dev Pauses a previously added token. Requires the token to be supported.
-     * @param token_ The address the token to pause.
+     * @param _token The address the token to pause.
      */
-    function pauseToken(address token_) external onlyOwner {
+    function pauseToken(address _token) external onlyOwner {
         require(
-            isSupported(token_),
+            isSupported(_token),
             "TokenRegistry: the token is not supported"
         );
-        _supported[token_].paused = true;
-        emit TokenPaused(token_);
+        _supported[_token].paused = true;
+        emit TokenPaused(_token);
     }
 
     /** @dev Resumes a previously paused token. Requires the token to be supported and to be paused.
-     * @param token_ The address the token to resume.
+     * @param _token The address the token to resume.
      */
-    function resumeToken(address token_) external onlyOwner {
+    function resumeToken(address _token) external onlyOwner {
         require(
-            isSupported(token_),
+            isSupported(_token),
             "TokenRegistry: the token is not supported"
         );
-        require(isPaused(token_), "TokenRegistry: the token is not paused");
-        _supported[token_].paused = false;
-        emit TokenResumed(token_);
+        require(isPaused(_token), "TokenRegistry: the token is not paused");
+        _supported[_token].paused = false;
+        emit TokenResumed(_token);
     }
 
     // =============================================== Getters ========================================================
@@ -98,30 +99,31 @@ contract TokensRegistry is Ownable, ITokensRegistry {
     /** @dev Returns the token information */
     function getTokenPair(address _token) public view returns (address) {
         require(
-            isActive(_token),
-            "TokensRegistry: token doesn't exist or is paused"
+            isSupported(_token),
+            "TokenRegistry: the token is not supported"
         );
+        require(!isPaused(_token), "TokenRegistry: the token is paused");
         return _supported[_token].pair;
     }
 
     /** @dev Returns if a token is supported.
-     * @param token_ Address of the token to query.
+     * @param _token Address of the token to query.
      */
-    function isSupported(address token_) public view returns (bool) {
-        return _supported[token_].id != address(0);
+    function isSupported(address _token) public view returns (bool) {
+        return _supported[_token].id != address(0);
     }
 
     /** @dev Returns if a token is paused..
-     * @param token_ Address of the token to query.
+     * @param _token Address of the token to query.
      */
-    function isPaused(address token_) public view returns (bool) {
-        return _supported[token_].paused;
+    function isPaused(address _token) public view returns (bool) {
+        return _supported[_token].paused;
     }
 
     /** @dev Returns true if provided token is supported and active.
-     * @param token_ Address of the token to query.
+     * @param _token Address of the token to query.
      */
-    function isActive(address token_) public view returns (bool) {
-        return isSupported(token_) && !isPaused(token_);
+    function isActive(address _token) public view returns (bool) {
+        return isSupported(_token) && !isPaused(_token);
     }
 }
