@@ -15,7 +15,7 @@
     "ci": "env CI=true",
     "compile": "hardhat compile",
     "coverage": "env COVERAGE=true hardhat coverage",
-    "format": "prettier --write 'contracts/**/*.sol' && yarn run sort",
+    "format": "prettier --write '**/*.{sol,js,json,md}' && yarn run sort",
     "gas-report": "env ENABLE_GAS_REPORT=true yarn test",
     "sort": "npx sort-package-json",
     "test": "hardhat test"
