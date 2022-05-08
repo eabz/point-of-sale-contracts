@@ -54,8 +54,7 @@ describe("Factory", () => {
     this.helper = await SwapHelper.deploy(
       router.address,
       factory.address,
-      dai.address,
-      weth.address
+      dai.address
     );
     await this.helper.deployed();
 

@@ -2,11 +2,10 @@
 pragma solidity 0.8.9;
 
 import "@openzeppelin/contracts/access/Ownable.sol";
-import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 import "../interfaces/IUniswapV2Pair.sol";
 import "../interfaces/IUniswapV2Router02.sol";
 import "../interfaces/IUniswapV2Factory.sol";
-import "../interfaces/IWETH.sol";
 import "../interfaces/ISwapHelper.sol";
 
 /**
@@ -24,44 +23,21 @@ contract SwapHelper is Ownable, ISwapHelper {
     /** @dev Address for DAI token. */
     address public DAI;
 
-    /** @dev Address for the Wrapped Native token of the network. */
-    address public WETH;
-
     // =============================================== Setters =========================================================
 
     /** @dev Constructor.
      * @param _router           The DEX router address.
      * @param _factory          The DEX factory address.
      * @param _dai              The address of the DAI token of the network.
-     * @param _weth             The address of the wrapped native token of the network.
      */
     constructor(
         address _router,
         address _factory,
-        address _dai,
-        address _weth
+        address _dai
     ) {
         router = _router;
         factory = _factory;
         DAI = _dai;
-        WETH = _weth;
-    }
-
-    /** @dev Performs a swap using ETH to DAI.
-     * @param expected The minimum expected amount of DAI to receive.
-     */
-    function swapETH(uint256 expected) public payable {
-        uint256 eth = _ethAmount(expected);
-        address[] memory path = new address[](2);
-        path[0] = WETH;
-        path[1] = DAI;
-
-        IUniswapV2Router02(router).swapExactETHForTokens{value: eth}(
-            expected,
-            path,
-            msg.sender,
-            block.timestamp + 200
-        );
     }
 
     /** @dev Performs a swap using any token to DAI.
@@ -104,13 +80,6 @@ contract SwapHelper is Ownable, ISwapHelper {
         return _tokenAmount(token, expected);
     }
 
-    /** @dev Public view for the internal `_ethAmount` function.
-     * @param expected    The amount of DAI that needs to be fulfilled.
-     */
-    function getETHAmount(uint256 expected) external view returns (uint256) {
-        return _ethAmount(expected);
-    }
-
     // =============================================== Internal ========================================================
 
     /** @dev Calculates the amount of tokens required to fulfill the `amount`.
@@ -139,9 +108,7 @@ contract SwapHelper is Ownable, ISwapHelper {
             ? (reserve0, reserve1)
             : (reserve1, reserve0);
 
-        uint256 amount = dai > token
-            ? (expected * (dai / token))
-            : (expected * (token / dai));
+        uint256 tokensRequired = ((expected * 1 ether) / _tokenPrice(_token));
 
         uint256 slippage = (expected * 1000) / dai;
 
@@ -151,21 +118,21 @@ contract SwapHelper is Ownable, ISwapHelper {
             slippage = 5;
         }
 
-        return amount + ((amount / 1000) * slippage);
+        return tokensRequired + ((tokensRequired / 1000) * slippage);
     }
 
-    /** @dev Calculates the amount ETH required to fulfill `amount`.
-     * @param expected  The amount of DAI that needs to be fulfilled.
-     */
-    function _ethAmount(uint256 expected) internal view returns (uint256) {
-        require(expected > 0, "SwapHelper: expected should be more than 0");
-        address pair = IUniswapV2Factory(factory).getPair(WETH, DAI);
-        (uint112 dai, uint112 eth, ) = IUniswapV2Pair(pair).getReserves();
-        uint256 daiForETH = (dai / eth);
-        uint256 amountETH = (expected / daiForETH);
-        uint256 slippage = (expected * 100) / dai;
-        require(slippage < 2, "SwapHelper: slippage above 2%");
-        return amountETH + ((amountETH / 100) * slippage);
+    function _tokenPrice(address _token) internal view returns (uint256) {
+        require(_token != address(0), "SwapHelper: token cannot be empty");
+
+        address pair = IUniswapV2Factory(factory).getPair(_token, DAI);
+
+        require(pair != address(0), "SwapHelper: pair cannot be empty");
+
+        (uint256 reserve0, uint256 reserve1, ) = IUniswapV2Pair(pair)
+            .getReserves();
+
+        uint256 token0 = reserve0 * (10**IERC20Metadata(_token).decimals());
+        return (token0 / reserve1);
     }
 
     /** @dev Utility function from UniswapV2Library to sort tokens. */

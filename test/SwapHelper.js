@@ -110,8 +110,7 @@ describe("SwapHelper", () => {
     this.helper = await SwapHelper.deploy(
       this.router.address,
       this.factory.address,
-      this.dai.address,
-      this.weth.address
+      this.dai.address
     );
     await this.helper.deployed();
   });
@@ -218,13 +217,105 @@ describe("SwapHelper", () => {
     ).to.eq(ethers.utils.parseEther("0.75375"));
   });
 
-  it("should return ETH amount for DAI to 1 / 20", async () => {});
+  it("should return ETH amount for DAI to 1 / 20", async () => {
+    await expect(
+      this.helper.getTokenAmount(
+        this.weth.address,
+        ethers.utils.parseEther("5000")
+      )
+    ).to.revertedWith("SwapHelper: slippage above 2%");
 
-  it("should swap token 1 for around 1 DAI", async () => {});
+    await expect(
+      await this.helper.getTokenAmount(
+        this.weth.address,
+        ethers.utils.parseEther("1500")
+      )
+    ).to.eq(ethers.utils.parseEther("0.75525"));
 
-  it("perform a trade with token 2", async () => {});
+    await expect(
+      await this.helper.getTokenAmount(
+        this.weth.address,
+        ethers.utils.parseEther("150")
+      )
+    ).to.eq(ethers.utils.parseEther("0.075375"));
 
-  it("perform a trade with ETH", async () => {});
+    await expect(
+      await this.helper.getTokenAmount(
+        this.weth.address,
+        ethers.utils.parseEther("15")
+      )
+    ).to.eq(ethers.utils.parseEther("0.0075375"));
 
-  it("perform a trade with WETH", async () => {});
+    await expect(
+      await this.helper.getTokenAmount(
+        this.weth.address,
+        ethers.utils.parseEther("1.5")
+      )
+    ).to.eq(ethers.utils.parseEther("0.00075375"));
+
+    await expect(
+      await this.helper.getTokenAmount(
+        this.weth.address,
+        ethers.utils.parseEther("0.15")
+      )
+    ).to.eq(ethers.utils.parseEther("0.000075375"));
+  });
+
+  it("should swap token 1 for exactly 10 DAI", async () => {
+    await this.token1.approve(
+      this.helper.address,
+      ethers.utils.parseEther("10000000000000000000000")
+    );
+
+    let token1 = await this.token1.balanceOf(this.developer.address);
+    let dai = await this.dai.balanceOf(this.developer.address);
+    await expect(token1).to.eq(ethers.utils.parseEther("900000"));
+    await expect(dai).to.eq(ethers.utils.parseEther("600000"));
+
+    await this.helper.swap(this.token1.address, ethers.utils.parseEther("10"));
+
+    token1 = await this.token1.balanceOf(this.developer.address);
+    dai = await this.dai.balanceOf(this.developer.address);
+    await expect(token1).to.eq(ethers.utils.parseEther("899989.95"));
+    await expect(dai).to.eq(ethers.utils.parseEther("600010"));
+  });
+
+  it("should swap token 2 for exactly 10 DAI", async () => {
+    await this.token2.approve(
+      this.helper.address,
+      ethers.utils.parseEther("10000000000000000000000")
+    );
+
+    let token1 = await this.token2.balanceOf(this.developer.address);
+    let dai = await this.dai.balanceOf(this.developer.address);
+    await expect(token1).to.eq(ethers.utils.parseEther("500000"));
+    await expect(dai).to.eq(ethers.utils.parseEther("600010"));
+
+    await this.helper.swap(this.token2.address, ethers.utils.parseEther("10"));
+
+    token1 = await this.token2.balanceOf(this.developer.address);
+    dai = await this.dai.balanceOf(this.developer.address);
+    await expect(token1).to.eq(ethers.utils.parseEther("499949.75"));
+    await expect(dai).to.eq(ethers.utils.parseEther("600020"));
+  });
+
+  it("should swap weth for exactly 10 DAI", async () => {
+    await this.weth.approve(
+      this.helper.address,
+      ethers.utils.parseEther("10000000000000000000000")
+    );
+    await this.weth.deposit({ value: ethers.utils.parseEther("10") });
+    let weth = await this.weth.balanceOf(this.developer.address);
+    let dai = await this.dai.balanceOf(this.developer.address);
+
+    await expect(dai).to.eq(ethers.utils.parseEther("600020"));
+    await expect(weth).to.eq(ethers.utils.parseEther("10"));
+
+    await this.helper.swap(this.weth.address, ethers.utils.parseEther("10"));
+
+    weth = await this.weth.balanceOf(this.developer.address);
+    dai = await this.dai.balanceOf(this.developer.address);
+    await expect(weth).to.eq(ethers.utils.parseEther("9.994975"));
+    await expect(dai).to.eq(ethers.utils.parseEther("600030"));
+  });
 });
