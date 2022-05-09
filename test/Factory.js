@@ -63,35 +63,38 @@ describe("Factory", () => {
   });
 
   it("should revert for trying to deploy while factory is not active", async () => {
-    expect(this.factory.deploy()).to.revertedWith("Factory: not active");
+    await expect(this.factory.deploy()).to.revertedWith("Factory: not active");
   });
 
   it("should revert for trying to activate from a non owner", async () => {
-    expect(
-      this.factory.setActive(true, { from: this.non_owner.address })
+    await expect(
+      this.factory.connect(this.non_owner).setActive(true)
     ).to.revertedWith("Ownable: caller is not the owner");
   });
 
   it("should activate the factory contract", async () => {
     await this.factory.setActive(true);
-    expect(await this.factory.active()).to.eq(true);
+    await expect(await this.factory.active()).to.eq(true);
   });
 
   it("should deploy a point of sale", async () => {
-    expect(this.factory.deploy({ from: this.developer.address }))
+    await expect(this.factory.deploy({ from: this.developer.address }))
       .to.emit(this.factory, "Deployed")
-      .withArgs([this.developer.address]);
+      .withArgs(
+        this.developer.address,
+        "0x3B02fF1e626Ed7a8fd6eC5299e2C54e1421B626B"
+      );
   });
 
   it("should revert a second deployment from the same address", async () => {
-    expect(
+    await expect(
       this.factory.deploy({ from: this.developer.address })
     ).to.revertedWith("Factory: user already has a deployment");
   });
 
   it("should return the deployment address", async () => {
-    expect(await this.factory.getDeployment(this.developer.address)).to.eq(
-      "0x3B02fF1e626Ed7a8fd6eC5299e2C54e1421B626B"
-    );
+    await expect(
+      await this.factory.getDeployment(this.developer.address)
+    ).to.eq("0x3B02fF1e626Ed7a8fd6eC5299e2C54e1421B626B");
   });
 });
